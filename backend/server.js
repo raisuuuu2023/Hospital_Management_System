@@ -8,7 +8,10 @@ app.use(cors());
 app.use(express.json());  
 
 const authRoutes = require('./routes/auth');
+const patientRoutes = require('./routes/patients');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/patients', patientRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hospital API is running' });
