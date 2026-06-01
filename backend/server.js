@@ -9,9 +9,11 @@ app.use(express.json());
 
 const authRoutes = require('./routes/auth');
 const patientRoutes = require('./routes/patients');
+const appointmentRoutes = require('./routes/appointments');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hospital API is running' });
