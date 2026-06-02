@@ -1,0 +1,33 @@
+{
+  "dependencies": {
+    "axios": "^1.16.1",
+    "react-router-dom": "^7.16.0",
+    "recharts": "^3.8.1",
+    "tailwindcss": "^4.3.0"
+  },
+  "name": "hospital_management_system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  },
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && node server.js",
+    "client": "cd frontend && npm start",
+    "install-all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raisuuuu2023/Hospital_Management_System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/raisuuuu2023/Hospital_Management_System/issues"
+  },
+  "homepage": "https://github.com/raisuuuu2023/Hospital_Management_System#readme"
+}
