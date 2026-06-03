@@ -3,17 +3,12 @@ import { createContext, useState, useContext } from 'react';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-<<<<<<< HEAD
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem('user')) || null
   );
   const [token, setToken] = useState(
     localStorage.getItem('token') || null
   );
-=======
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
->>>>>>> mahi
 
   const login = (userData, tokenData) => {
     setUser(userData);
