@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export default function Navbar({ active, setActive }) {
+export default function Navbar({ active }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -14,92 +14,68 @@ export default function Navbar({ active, setActive }) {
 
   return (
     <div>
-      {/* Top Navbar */}
+      {/* Top Bar */}
       <div style={{
-        background: '#1a6b3a',
-        color: '#fff',
-        padding: '0 24px',
-        height: '56px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
+        background: '#1a6b3a', color: '#fff',
+        height: '52px', display: 'flex',
+        alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 32px', position: 'fixed',
+        top: 0, left: 0, right: 0, zIndex: 100,
       }}>
-        <div style={{ fontSize: '18px', fontWeight: '500' }}>
-          🏥 HMS — Hospital Management
-        </div>
-
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {links.map(link => (
-            <div
-              key={link}
-              onClick={() => setActive && setActive(link)}
-              style={{
-                color: '#fff',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                background: active === link ? 'rgba(255,255,255,0.2)' : 'transparent',
-                opacity: active === link ? 1 : 0.85,
-              }}
-            >
-              {link}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '20px' }}>🔔</span>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: '#fff', color: '#1a6b3a',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '13px', fontWeight: '600',
-          }}>
-            {user?.name?.charAt(0).toUpperCase() || 'A'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '22px' }}>🏥</span>
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: '600' }}>HMS — Hospital Management System</div>
+            <div style={{ fontSize: '11px', opacity: 0.7 }}>Providing quality healthcare management</div>
           </div>
-          <span style={{ fontSize: '13px' }}>{user?.name || 'Admin'}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px' }}>
+          <span>🔔</span>
+          <span>{user?.name || 'Admin'}</span>
           <button onClick={handleLogout} style={{
             background: 'rgba(255,255,255,0.15)',
-            border: 'none', color: '#fff',
-            padding: '6px 12px', borderRadius: '6px',
-            cursor: 'pointer', fontSize: '13px',
+            border: '1px solid rgba(255,255,255,0.4)',
+            color: '#fff', padding: '5px 14px',
+            borderRadius: '4px', cursor: 'pointer', fontSize: '12px',
           }}>
             Logout
           </button>
         </div>
       </div>
 
-      {/* Sub Navbar */}
+      {/* Navbar */}
       <div style={{
-        background: '#f0f7f3',
-        borderBottom: '1px solid #b6d9c4',
-        padding: '0 24px',
-        display: 'flex',
-        gap: '4px',
-        position: 'fixed',
-        top: '56px',
-        left: 0,
-        right: 0,
-        zIndex: 99,
+        background: '#145c30', height: '44px',
+        display: 'flex', alignItems: 'center',
+        padding: '0 32px', gap: '2px',
+        position: 'fixed', top: '52px',
+        left: 0, right: 0, zIndex: 99,
       }}>
-        {['Overview', 'Analytics', 'Settings'].map(tab => (
-          <div key={tab} style={{
-            padding: '10px 16px',
-            fontSize: '13px',
-            color: tab === 'Overview' ? '#1a6b3a' : '#2d6a4f',
-            cursor: 'pointer',
-            borderBottom: tab === 'Overview' ? '2px solid #1a6b3a' : '2px solid transparent',
-            fontWeight: tab === 'Overview' ? '500' : '400',
-          }}>
-            {tab}
+        {links.map(link => (
+          <div
+            key={link}
+            onClick={() => navigate(`/admin/${link.toLowerCase()}`)}
+            style={{
+              color: '#fff', padding: '8px 16px',
+              fontSize: '13px', cursor: 'pointer', borderRadius: '4px',
+              background: active === link ? 'rgba(255,255,255,0.15)' : 'transparent',
+              opacity: active === link ? 1 : 0.85,
+            }}
+          >
+            {link}
           </div>
         ))}
+      </div>
+
+      {/* News Bar */}
+      <div style={{
+        background: '#e8f5ee', borderBottom: '1px solid #b6d9c4',
+        padding: '8px 32px', fontSize: '12px', color: '#1a6b3a',
+        display: 'flex', gap: '16px', alignItems: 'center',
+        position: 'fixed', top: '96px', left: 0, right: 0, zIndex: 98,
+      }}>
+        <span style={{ background: '#1a6b3a', color: '#fff', padding: '2px 10px', borderRadius: '3px', fontSize: '11px', fontWeight: '600', flexShrink: 0 }}>NEWS</span>
+        <span>Welcome to Hospital Management System — Admin Panel</span>
       </div>
     </div>
   );
