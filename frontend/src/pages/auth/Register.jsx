@@ -10,14 +10,11 @@ export default function Register() {
 
   const [form, setForm] = useState({
     name: '', email: '', password: '', confirmPassword: '',
-    // doctor
     specialization: '', license: '',
-    // patient
-    age: '', sex: '', address: '',
+    age: '', sex: '', bloodGroup: '', phone: '', address: '',
   });
 
   const navigate = useNavigate();
-
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async () => {
@@ -206,6 +203,24 @@ export default function Register() {
                       <option>Female</option>
                       <option>Other</option>
                     </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Blood Group *</label>
+                    <select name="bloodGroup" value={form.bloodGroup} onChange={handle} style={inputStyle}>
+                      <option value="">Select...</option>
+                      <option>A+</option>
+                      <option>A-</option>
+                      <option>B+</option>
+                      <option>B-</option>
+                      <option>AB+</option>
+                      <option>AB-</option>
+                      <option>O+</option>
+                      <option>O-</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone Number *</label>
+                    <input name="phone" type="tel" value={form.phone} onChange={handle} placeholder="+880XXXXXXXXXX" style={inputStyle} />
                   </div>
                 </div>
                 <label style={labelStyle}>Address *</label>

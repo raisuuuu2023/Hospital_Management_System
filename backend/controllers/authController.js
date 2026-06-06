@@ -1,9 +1,11 @@
-const db      = require('../config/db');
-const bcrypt  = require('bcrypt');
-const jwt     = require('jsonwebtoken');
+const db     = require('../config/db');
+const bcrypt = require('bcrypt');
+const jwt    = require('jsonwebtoken');
 
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role,
+          bloodGroup, phone, address, age, sex,
+          specialization, license } = req.body;
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -11,29 +13,42 @@ const register = async (req, res) => {
 
   const allowedRoles = ['patient', 'doctor', 'admin'];
   if (!allowedRoles.includes(role)) {
-    return res.status(400).json({ error: 'Invalid role. Use: patient, doctor, or admin' });
+    return res.status(400).json({ error: 'Invalid role' });
   }
 
   try {
     const [existing] = await db.promise().query(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
+      'SELECT id FROM users WHERE email = ?', [email]
     );
-
     if (existing.length > 0) {
       return res.status(409).json({ error: 'Email already registered' });
     }
- 
-    const hashedPassword = await bcrypt.hash(password, 10);
 
-    await db.promise().query(
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [result] = await db.promise().query(
       'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
       [name, email, hashedPassword, role]
     );
 
+    const userId = result.insertId;
+
+    if (role === 'patient') {
+      await db.promise().query(
+        'INSERT INTO patients (user_id, blood_group, phone, address, age, sex) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, bloodGroup || null, phone || null, address || null, age || null, sex || null]
+      );
+    }
+
+    if (role === 'doctor') {
+      await db.promise().query(
+        'INSERT INTO doctors (user_id, specialty, license) VALUES (?, ?, ?)',
+        [userId, specialization || null, license || null]
+      );
+    }
+
     res.status(201).json({ message: 'Registration successful' });
 
-    } catch (err) {
+  } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
@@ -47,15 +62,14 @@ const login = async (req, res) => {
 
   try {
     const [rows] = await db.promise().query(
-      'SELECT * FROM users WHERE email = ?',
-      [email]
+      'SELECT * FROM users WHERE email = ?', [email]
     );
 
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-    const user = rows[0];
 
+    const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
