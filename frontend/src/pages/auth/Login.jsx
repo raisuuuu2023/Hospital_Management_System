@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axiosInstance from '../../utils/axiosInstance';
+import TopBar from '../../components/Topbar';
+import Footer from '../../components/Footer';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,6 +22,7 @@ export default function Login() {
       login(res.data.user, res.data.token);
       navigate(`/${res.data.user.role}/dashboard`);
     } catch (err) {
+      console.error('Login error:', err);
       setError('Invalid email or password');
     } finally {
       setLoading(false);
@@ -37,45 +40,11 @@ export default function Login() {
   return (
     <div style={{ fontFamily: 'Segoe UI, sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Top Bar */}
-      <div style={{ background: '#1a6b3a', color: '#fff', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '22px' }}>🏥</span>
-          <div>
-            <div style={{ fontSize: '15px', fontWeight: '600' }}>HMS — Hospital Management System</div>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>Providing quality healthcare management</div>
-          </div>
-        </div>
-        <div style={{ border: '1px solid rgba(255,255,255,0.4)', padding: '5px 14px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer' }}>
-          👤 Login Area
-        </div>
-      </div>
+      <TopBar showRegister={true} />
 
-      {/* Navbar */}
-      <div style={{ background: '#145c30', height: '44px', display: 'flex', alignItems: 'center', padding: '0 32px', gap: '2px' }}>
-        {['Home', 'Departments', 'Doctors', 'Patients', 'Appointments', 'About Us', 'Contact'].map((item, i) => (
-          <div key={item} style={{
-            color: '#fff', padding: '8px 16px', fontSize: '13px',
-            cursor: 'pointer', borderRadius: '4px',
-            background: i === 0 ? 'rgba(255,255,255,0.15)' : 'transparent',
-            opacity: i === 0 ? 1 : 0.85,
-          }}>
-            {item}
-          </div>
-        ))}
-      </div>
-
-      {/* News Bar */}
-      <div style={{ background: '#e8f5ee', borderBottom: '1px solid #b6d9c4', padding: '8px 32px', fontSize: '12px', color: '#1a6b3a', display: 'flex', gap: '16px', alignItems: 'center' }}>
-        <span style={{ background: '#1a6b3a', color: '#fff', padding: '2px 10px', borderRadius: '3px', fontSize: '11px', fontWeight: '600', flexShrink: 0 }}>NEWS</span>
-        <span>Welcome to our Hospital</span>
-      </div>
-
-      {/* Main */}
       <div style={{ flex: 1, background: '#f0f7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
         <div style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden', width: '100%', maxWidth: '420px', border: '0.5px solid #e2e8f0' }}>
 
-          {/* Card Header */}
           <div style={{ background: '#1a6b3a', padding: '24px 32px', color: '#fff', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <span style={{ fontSize: '40px' }}>🩺</span>
             <div>
@@ -84,7 +53,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Card Body */}
           <div style={{ padding: '28px 32px' }}>
             <div style={{ textAlign: 'right', marginBottom: '16px' }}>
               <Link to="/register" style={{ fontSize: '12px', color: '#1a6b3a', textDecoration: 'none' }}>
@@ -138,16 +106,11 @@ export default function Login() {
             >
               {loading ? 'Signing in...' : '→ Login Now'}
             </button>
-
-            
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ background: '#1a6b3a', color: '#fff', textAlign: 'center', padding: '14px', fontSize: '12px', opacity: 0.9 }}>
-        Copyright © 2024 — 2026 <strong>Hospital Management System</strong>. All Rights Reserved.
-      </div>
+      <Footer />
     </div>
   );
 }
