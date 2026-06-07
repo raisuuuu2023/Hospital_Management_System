@@ -5,6 +5,8 @@ import Register from './pages/auth/Register';
 import AdminDashboard from './pages/admin/Dashboard';
 import DoctorDashboard from './pages/doctor/Dashboard';
 import PatientDashboard from './pages/patient/Dashboard';
+import Doctors from './pages/admin/Doctors';
+
 
 // ✅ Protected Route - login না করলে /login এ পাঠাবে
 const ProtectedRoute = ({ element, allowedRole }) => {
@@ -22,6 +24,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin/doctors" element={<Doctors />} />
 
           {/* Protected Dashboard Routes */}
           <Route path="/admin/dashboard" element={
