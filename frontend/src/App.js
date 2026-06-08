@@ -7,8 +7,6 @@ import DoctorDashboard from './pages/doctor/Dashboard';
 import PatientDashboard from './pages/patient/Dashboard';
 import Doctors from './pages/admin/Doctors';
 
-
-// ✅ Protected Route - login না করলে /login এ পাঠাবে
 const ProtectedRoute = ({ element, allowedRole }) => {
   const { user, token } = useAuth();
   if (!token) return <Navigate to="/login" />;
@@ -24,15 +22,21 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/admin/doctors" element={<Doctors />} />
 
-          {/* Protected Dashboard Routes */}
+          {/* Admin Routes */}
           <Route path="/admin/dashboard" element={
             <ProtectedRoute element={<AdminDashboard />} allowedRole="admin" />
           } />
+          <Route path="/admin/doctors" element={
+            <ProtectedRoute element={<Doctors />} allowedRole="admin" />
+          } />
+
+          {/* Doctor Routes */}
           <Route path="/doctor/dashboard" element={
             <ProtectedRoute element={<DoctorDashboard />} allowedRole="doctor" />
           } />
+
+          {/* Patient Routes */}
           <Route path="/patient/dashboard" element={
             <ProtectedRoute element={<PatientDashboard />} allowedRole="patient" />
           } />
