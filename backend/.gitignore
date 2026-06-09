@@ -1,0 +1,8 @@
+node_modules
+.env
+
+controllers/patientController.js
+controllers/doctorController.js
+
+routes/patients.js
+routes/doctors.js
