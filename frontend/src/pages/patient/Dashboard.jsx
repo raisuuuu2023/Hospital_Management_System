@@ -1,118 +1,173 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
+import { useAuth } from '../../context/AuthContext';
+import Footer from '../../components/Footer';
 
-const PatientDashboard = () => {
-  const navigate = useNavigate();
+export default function PatientDashboard() {
   const [appointments, setAppointments] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) { navigate('/login'); return; }
-    axios.get('http://localhost:5000/api/appointments/patient', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => setAppointments(r.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleLogout = () => { localStorage.clear(); navigate('/login'); };
+  const fetchData = async () => {
+    try {
+      const [aptRes, profileRes] = await Promise.all([
+        axiosInstance.get('/api/appointments/my').catch(() => ({ data:{ appointments:[] } })),
+        axiosInstance.get('/api/patients/profile').catch(() => ({ data:null })),
+      ]);
+      setAppointments(aptRes.data.appointments || aptRes.data || []);
+      setProfile(profileRes.data);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const upcoming = appointments.filter(a => a.status==='confirmed' || a.status==='pending');
+
+  const C = {
+    topbar: { background:'#1a6b3a', color:'#fff', height:52, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', position:'fixed', top:0, left:0, right:0, zIndex:100 },
+    navbar: { background:'#145c30', height:44, display:'flex', alignItems:'center', padding:'0 32px', gap:2, position:'fixed', top:52, left:0, right:0, zIndex:99 },
+    newsbar: { background:'#e8f5ee', borderBottom:'1px solid #b6d9c4', padding:'8px 32px', fontSize:12, color:'#1a6b3a', display:'flex', gap:16, alignItems:'center', position:'fixed', top:96, left:0, right:0, zIndex:98 },
+    main: { background:'#f0f7f3', flex:1, padding:'24px 32px', marginTop:132 },
+    card: { background:'#fff', borderRadius:8, border:'0.5px solid #e2e8f0', padding:'20px 24px' },
+  };
+
+  const statCards = [
+    { title:'Upcoming Appointments', value:upcoming.length, icon:'📅', color:'#1a6b3a', sub:'Confirmed & Pending' },
+    { title:'Total Appointments', value:appointments.length, icon:'📋', color:'#2980b9', sub:'All time' },
+    { title:'Completed', value:appointments.filter(a=>a.status==='done').length, icon:'✅', color:'#e67e22', sub:'Done visits' },
+  ];
 
   return (
-    <div style={s.page}>
-      <div style={{...s.sidebar,background:'#6a1b9a'}}>
-        <div style={s.brand}>🏥<br /><span style={{fontSize:13}}>Patient Panel</span></div>
-        <nav>
-          {[{icon:'📊',label:'Dashboard'},{icon:'📅',label:'Book Appointment'},{icon:'📋',label:'My Appointments'}].map(i=>(
-            <div key={i.label} style={s.navItem}>{i.icon} &nbsp;{i.label}</div>
-          ))}
-        </nav>
-        <button onClick={handleLogout} style={s.logoutBtn}>🚪 Logout</button>
-      </div>
-      <div style={s.main}>
-        <div style={s.header}>
+    <div style={{ fontFamily:'Segoe UI, sans-serif', minHeight:'100vh', display:'flex', flexDirection:'column' }}>
+
+      <div style={C.topbar}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:22 }}>🏥</span>
           <div>
-            <h2 style={{margin:0,color:'#1a3c5e'}}>Patient Dashboard</h2>
-            <p style={{margin:0,color:'#888',fontSize:13}}>Hello, {user.name||'Patient'} 👋</p>
+            <div style={{ fontSize:15, fontWeight:700 }}>HMS — Hospital Management System</div>
+            <div style={{ fontSize:11, opacity:0.7 }}>Providing quality healthcare management</div>
           </div>
-          <div style={{...s.avatar,background:'#6a1b9a'}}>{(user.name||'P')[0].toUpperCase()}</div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:13 }}>
+          <span>🔔</span>
+          <span style={{ fontWeight:600 }}>{user?.name || 'Patient'}</span>
+          <button onClick={() => { logout(); navigate('/login'); }} style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.4)', color:'#fff', padding:'5px 14px', borderRadius:4, cursor:'pointer', fontSize:12 }}>Logout</button>
+        </div>
+      </div>
+
+      <div style={C.navbar}>
+        {[{label:'Dashboard',path:'/patient/dashboard'},{label:'Book Appointment',path:'/patient/book-appointment'},{label:'My Profile',path:'/patient/profile'}].map(link => (
+          <div key={link.label} onClick={() => navigate(link.path)} style={{ color:'#fff', padding:'8px 16px', fontSize:13, cursor:'pointer', borderRadius:4, fontWeight:link.label==='Dashboard'?600:400, background:link.label==='Dashboard'?'rgba(255,255,255,0.15)':'transparent', opacity:link.label==='Dashboard'?1:0.85 }}>
+            {link.label}
+          </div>
+        ))}
+      </div>
+
+      <div style={C.newsbar}>
+        <span style={{ background:'#1a6b3a', color:'#fff', padding:'2px 10px', borderRadius:3, fontSize:11, fontWeight:700, flexShrink:0 }}>NEWS</span>
+        <span style={{ fontWeight:500 }}>Welcome to Hospital Management System — Patient Portal</span>
+      </div>
+
+      <div style={C.main}>
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:16, fontWeight:700, color:'#1a6b3a' }}>Welcome back, {user?.name?.split(' ')[0] || 'Patient'}! 👋</div>
+          <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>Here's your health summary</div>
         </div>
 
-        <div style={s.grid4}>
-          {[
-            {label:'Total',value:appointments.length,icon:'📅',color:'#1976d2'},
-            {label:'Approved',value:appointments.filter(a=>a.status==='approved').length,icon:'✅',color:'#388e3c'},
-            {label:'Pending',value:appointments.filter(a=>a.status==='pending').length,icon:'⏳',color:'#f57c00'},
-            {label:'Cancelled',value:appointments.filter(a=>a.status==='cancelled').length,icon:'❌',color:'#d32f2f'},
-          ].map(c=>(
-            <div key={c.label} style={{...s.card,borderTop:`4px solid ${c.color}`}}>
-              <div style={{fontSize:32}}>{c.icon}</div>
-              <div style={{fontSize:28,fontWeight:'bold',color:c.color}}>{c.value}</div>
-              <div style={{color:'#888',fontSize:13}}>{c.label} Appointments</div>
+        <div style={{ display:'flex', gap:14, marginBottom:20 }}>
+          {statCards.map(card => (
+            <div key={card.title} style={{ flex:1, background:'#fff', borderRadius:8, border:'0.5px solid #e2e8f0', borderLeft:`3px solid ${card.color}`, padding:'16px 20px', display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{ width:44, height:44, borderRadius:8, background:`${card.color}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+                {card.icon}
+              </div>
+              <div>
+                <div style={{ fontSize:11, color:'#64748b', marginBottom:2 }}>{card.title}</div>
+                <div style={{ fontSize:26, fontWeight:700, color:card.color }}>{card.value}</div>
+                <div style={{ fontSize:10, color:'#94a3b8', marginTop:2 }}>{card.sub}</div>
+              </div>
             </div>
           ))}
         </div>
 
-        <div style={s.box}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-            <h3 style={{color:'#1a3c5e',margin:0}}>📋 My Appointments</h3>
-            <button
-              onClick={() => navigate('/patient/book-appointment')}
-              style={{background:'#6a1b9a',color:'white',border:'none',padding:'9px 18px',borderRadius:8,cursor:'pointer',fontSize:14}}>
-              + Book Appointment
-            </button>
+        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:14 }}>
+          <div style={C.card}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a6b3a' }}>My Appointments</div>
+              <span onClick={() => navigate('/patient/book-appointment')} style={{ fontSize:12, color:'#1a6b3a', cursor:'pointer', fontWeight:500 }}>Book new →</span>
+            </div>
+            {loading ? <p style={{ color:'#94a3b8', fontSize:13 }}>Loading...</p> : (
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr style={{ background:'#f8fafc' }}>
+                    {['Doctor','Date','Time','Status'].map(h => (
+                      <th key={h} style={{ textAlign:'left', padding:'10px 12px', color:'#64748b', fontWeight:600, borderBottom:'1px solid #f1f5f9' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.length === 0
+                    ? <tr><td colSpan={4} style={{ textAlign:'center', padding:32, color:'#94a3b8' }}>No appointments yet. <span onClick={() => navigate('/patient/book-appointment')} style={{ color:'#1a6b3a', cursor:'pointer', fontWeight:600 }}>Book one!</span></td></tr>
+                    : appointments.slice(0,5).map((a,i) => (
+                      <tr key={i} style={{ borderBottom:'0.5px solid #f1f5f9' }}>
+                        <td style={{ padding:'10px 12px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div style={{ width:28, height:28, borderRadius:'50%', background:'#e8f5ee', color:'#1a6b3a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700 }}>
+                              {(a.doctor_name||'D')[0]}
+                            </div>
+                            <span style={{ fontWeight:500 }}>{a.doctor_name||'—'}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding:'10px 12px', color:'#64748b' }}>{a.date ? new Date(a.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'}</td>
+                        <td style={{ padding:'10px 12px', color:'#64748b' }}>{a.time||'—'}</td>
+                        <td style={{ padding:'10px 12px' }}><StatusBadge status={a.status}/></td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            )}
           </div>
-          {loading ? <p>Loading...</p> : (
-            <table style={s.table}>
-              <thead>
-                <tr style={{background:'#6a1b9a',color:'white'}}>
-                  {['Doctor','Date','Reason','Status'].map(h=><th key={h} style={s.th}>{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.length===0
-                  ? <tr><td colSpan={4} style={{textAlign:'center',padding:20,color:'#aaa'}}>No appointments yet. Book one! 🏥</td></tr>
-                  : appointments.map((a,i)=>(
-                    <tr key={i} style={{background:i%2===0?'#f9f9f9':'white'}}>
-                      <td style={s.td}>{a.doctor_name||'N/A'}</td>
-                      <td style={s.td}>{a.appointment_date?new Date(a.appointment_date).toLocaleDateString():'N/A'}</td>
-                      <td style={s.td}>{a.reason||'General Checkup'}</td>
-                      <td style={s.td}><StatusBadge status={a.status}/></td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          )}
+
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={C.card}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a6b3a', marginBottom:14 }}>My Profile</div>
+              {[
+                { label:'Name', value:user?.name },
+                { label:'Blood Group', value:profile?.blood_group, color:'#e74c3c' },
+                { label:'Phone', value:profile?.phone },
+                { label:'Gender', value:profile?.gender },
+                { label:'Address', value:profile?.address },
+              ].map(item => (
+                <div key={item.label} style={{ display:'flex', justifyContent:'space-between', fontSize:13, paddingBottom:8, borderBottom:'0.5px solid #f1f5f9', marginBottom:8 }}>
+                  <span style={{ color:'#64748b', fontWeight:500 }}>{item.label}</span>
+                  <span style={{ fontWeight:700, color:item.color||'#1e293b' }}>{item.value||'—'}</span>
+                </div>
+              ))}
+              <button onClick={() => navigate('/patient/profile')} style={{ width:'100%', padding:8, background:'#f0f7f3', border:'1px solid #b6d9c4', color:'#1a6b3a', borderRadius:6, fontSize:12, cursor:'pointer', marginTop:4, fontWeight:600 }}>
+                ✏️ Edit Profile
+              </button>
+            </div>
+
+            <div style={C.card}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a6b3a', marginBottom:12 }}>💡 Health Tips</div>
+              {['Drink 8 glasses of water daily 💧','Exercise at least 30 mins a day 🏃','Get 7-8 hours of sleep 😴','Eat balanced meals 🥗'].map((tip,i) => (
+                <div key={i} style={{ fontSize:12, color:'#64748b', padding:'7px 0', borderBottom:i<3?'0.5px solid #f1f5f9':'none', fontWeight:500 }}>{tip}</div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
-};
+}
 
-const StatusBadge = ({status}) => {
-  const map = {approved:['#e8f5e9','#2e7d32'],pending:['#fff3e0','#e65100'],cancelled:['#ffebee','#c62828']};
-  const [bg,color] = map[status]||['#f5f5f5','#333'];
-  return <span style={{background:bg,color,padding:'3px 10px',borderRadius:12,fontSize:12}}>{status||'pending'}</span>;
+const StatusBadge = ({ status }) => {
+  const map = { confirmed:['#e8f5ee','#1a6b3a','Confirmed'], pending:['#fef9e7','#b7770d','Pending'], done:['#e8f5ee','#1a6b3a','Done'], cancelled:['#fdecea','#c0392b','Cancelled'] };
+  const [bg, color, label] = map[status] || ['#f1f5f9','#64748b',status||'—'];
+  return <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:600, background:bg, color }}>{label}</span>;
 };
-
-const s = {
-  page:{display:'flex',minHeight:'100vh',fontFamily:'Segoe UI,sans-serif',background:'#f0f4f8'},
-  sidebar:{width:220,display:'flex',flexDirection:'column',padding:'0',position:'fixed',height:'100vh'},
-  brand:{textAlign:'center',padding:'24px 0 16px',color:'white',fontSize:22,borderBottom:'1px solid rgba(255,255,255,0.15)',marginBottom:10},
-  navItem:{color:'white',padding:'13px 24px',cursor:'pointer',fontSize:14},
-  logoutBtn:{margin:'auto 16px 24px',background:'#c0392b',border:'none',color:'white',padding:12,borderRadius:8,cursor:'pointer'},
-  main:{marginLeft:220,flex:1,padding:30},
-  header:{display:'flex',justifyContent:'space-between',alignItems:'center',background:'white',padding:'18px 24px',borderRadius:12,marginBottom:24,boxShadow:'0 2px 8px rgba(0,0,0,0.07)'},
-  avatar:{width:42,height:42,borderRadius:'50%',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold',fontSize:18},
-  grid4:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:20,marginBottom:24},
-  card:{background:'white',borderRadius:12,padding:20,textAlign:'center',boxShadow:'0 2px 8px rgba(0,0,0,0.07)'},
-  box:{background:'white',borderRadius:12,padding:24,boxShadow:'0 2px 8px rgba(0,0,0,0.07)'},
-  table:{width:'100%',borderCollapse:'collapse'},
-  th:{padding:'11px 14px',textAlign:'left',fontWeight:600},
-  td:{padding:'11px 14px',borderBottom:'1px solid #f0f0f0'},
-};
-
-export default PatientDashboard;
