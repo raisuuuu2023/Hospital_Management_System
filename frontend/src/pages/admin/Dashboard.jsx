@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
+import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
-const topbarStyle = { background:'#1a6b3a', color:'#fff', height:52, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', position:'fixed', top:0, left:0, right:0, zIndex:100 };
-const navbarStyle = { background:'#145c30', height:44, display:'flex', alignItems:'center', padding:'0 32px', gap:2, position:'fixed', top:52, left:0, right:0, zIndex:99 };
-const newsbarStyle = { background:'#e8f5ee', borderBottom:'1px solid #b6d9c4', padding:'8px 32px', fontSize:12, color:'#1a6b3a', display:'flex', gap:16, alignItems:'center', position:'fixed', top:96, left:0, right:0, zIndex:98 };
-const mainStyle = { background:'#f0f7f3', flex:1, padding:'24px 32px', marginTop:132 };
+const mainStyle = { background:'#f0f7f3', flex:1, padding:'24px 32px', marginTop:132, minHeight:'calc(100vh - 132px)' };
 const cardStyle = { background:'#fff', borderRadius:8, border:'0.5px solid #e2e8f0', padding:'20px 24px' };
 
 const StatCard = ({ title, value, icon, color, sub }) => (
@@ -27,7 +25,7 @@ const StatusBadge = ({ status }) => {
   const map = {
     confirmed: ['#e8f5ee','#1a6b3a','Confirmed'],
     pending: ['#fef9e7','#b7770d','Pending'],
-    done: ['#e8f5ee','#1a6b3a','Done'],
+    done: ['#e8f5ee','#6a1b9a','Done'],
     cancelled: ['#fdecea','#c0392b','Cancelled'],
   };
   const [bg, color, label] = map[status] || ['#f1f5f9','#64748b', status||'—'];
@@ -38,31 +36,37 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ doctors:0, patients:0, appointments:0, pending:0 });
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [docRes, patRes, aptRes] = await Promise.all([
-        axiosInstance.get('/api/doctors').catch(() => ({ data:[] })),
-        axiosInstance.get('/api/patients').catch(() => ({ data:[] })),
-        axiosInstance.get('/api/appointments').catch(() => ({ data:[] })),
+        axiosInstance.get('/api/doctors/all').catch(() => ({ data:[] })),
+        axiosInstance.get('/api/doctors/admin/patients').catch(() => ({ data:[] })),
+        axiosInstance.get('/api/doctors/admin/appointments').catch(() => ({ data:[] })),
       ]);
-      const apts = Array.isArray(aptRes.data) ? aptRes.data : [];
-      setStats({ doctors: docRes.data.length||0, patients: patRes.data.length||0, appointments: apts.length, pending: apts.filter(a => a.status==='pending').length });
-      setAppointments(apts.slice(0,5));
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
 
-  const navLinks = [
-    { label:'Dashboard', path:'/admin/dashboard' },
-    { label:'Doctors', path:'/admin/doctors' },
-    { label:'Patients', path:'/admin/patients' },
-    { label:'Appointments', path:'/admin/appointments' },
-  ];
+      const docsCount = Array.isArray(docRes.data) ? docRes.data.length : (docRes.data.doctors?.length || 0);
+      const patsCount = Array.isArray(patRes.data) ? patRes.data.length : (patRes.data.patients?.length || 0);
+      const apts = Array.isArray(aptRes.data) ? aptRes.data : (aptRes.data.appointments || []);
+
+      setStats({
+        doctors: docsCount,
+        patients: patsCount,
+        appointments: apts.length,
+        pending: apts.filter(a => a.status === 'pending').length
+      });
+      setAppointments(apts.slice(0, 5));
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const statCards = [
     { title:'Total Doctors', value:stats.doctors, icon:'👨‍⚕️', color:'#1a6b3a', sub:'Registered doctors' },
@@ -72,44 +76,14 @@ export default function AdminDashboard() {
   ];
 
   const quickActions = [
-    { label:'+ Add New Doctor', path:'/register', bg:'#136634' },
-    { label:'📅 View All Appointments', path:'/admin/appointments', bg:'#1172b3' },
-    { label:'🧑‍🤝‍🧑 Manage Patients', path:'/admin/patients', bg:'#601490' },
-    { label:'👨‍⚕️ Manage Doctors', path:'/admin/doctors', bg:'#c7bbb0' },
+    { label:'+ Add New Doctor', path:'/admin/add-doctor', bg:'#136634' },
+    { label:'👨‍⚕️ Manage Doctors', path:'/admin/doctors', bg:'#1a6b3a' },
   ];
 
   return (
     <div style={{ fontFamily:'Segoe UI, sans-serif', minHeight:'100vh', display:'flex', flexDirection:'column' }}>
 
-      <div style={topbarStyle}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ fontSize:22 }}>🏥</span>
-          <div>
-            <div style={{ fontSize:15, fontWeight:700 }}>HMS — Hospital Management System</div>
-            <div style={{ fontSize:11, opacity:0.7 }}>Providing quality healthcare management</div>
-          </div>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:13 }}>
-          <span>🔔</span>
-          <span style={{ fontWeight:600 }}>{user?.name || 'Admin'}</span>
-          <button onClick={() => { logout(); navigate('/login'); }} style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.4)', color:'#fff', padding:'5px 14px', borderRadius:4, cursor:'pointer', fontSize:12 }}>
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <div style={navbarStyle}>
-        {navLinks.map(link => (
-          <div key={link.label} onClick={() => navigate(link.path)} style={{ color:'#fff', padding:'8px 16px', fontSize:13, cursor:'pointer', borderRadius:4, fontWeight:link.label==='Dashboard'?600:400, background:link.label==='Dashboard'?'rgba(255,255,255,0.15)':'transparent', opacity:link.label==='Dashboard'?1:0.85 }}>
-            {link.label}
-          </div>
-        ))}
-      </div>
-
-      <div style={newsbarStyle}>
-        <span style={{ background:'#1a6b3a', color:'#fff', padding:'2px 10px', borderRadius:3, fontSize:11, fontWeight:700, flexShrink:0 }}>NEWS</span>
-        <span style={{ fontWeight:500 }}>Welcome to Hospital Management System — Admin Panel</span>
-      </div>
+      <Navbar active="Dashboard" />
 
       <div style={mainStyle}>
         <div style={{ marginBottom:20 }}>
@@ -126,7 +100,6 @@ export default function AdminDashboard() {
           <div style={cardStyle}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
               <div style={{ fontSize:14, fontWeight:700, color:'#064e22' }}>Recent Appointments</div>
-              <span onClick={() => navigate('/admin/appointments')} style={{ fontSize:12, color:'#0d5c2d', cursor:'pointer', fontWeight:500 }}>View all →</span>
             </div>
             {loading ? <p style={{ color:'#2e72d2', fontSize:13 }}>Loading...</p> : (
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
@@ -141,7 +114,7 @@ export default function AdminDashboard() {
                   {appointments.length === 0
                     ? <tr><td colSpan={4} style={{ textAlign:'center', padding:32, color:'#94a3b8' }}>No appointments found</td></tr>
                     : appointments.map((a, i) => (
-                      <tr key={i} style={{ borderBottom:'0.5px solid #f1f5f9' }}>
+                      <tr key={a.appointment_id || a.id || i} style={{ borderBottom:'0.5px solid #f1f5f9' }}>
                         <td style={{ padding:'10px 12px' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                             <div style={{ width:28, height:28, borderRadius:'50%', background:'#e8f5ee', color:'#1a6b3a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700 }}>

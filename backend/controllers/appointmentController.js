@@ -4,66 +4,73 @@ const bookAppointment = async (req, res) => {
   const { doctor_id, date, time } = req.body;
   const user_id = req.user.id;
   
-  if (!doctor_id || !date || !time) {
-    return res.status(400).json({ error: 'doctor_id, date and time are required' });
+  // Validate required fields (time is optional)
+  if (!doctor_id || !date) {
+    return res.status(400).json({ error: 'doctor_id and date are required' });
   }
 
+  // Validate date is not in the past
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const appointmentDate = new Date(date);
+  if (isNaN(appointmentDate.getTime())) {
+    return res.status(400).json({ error: 'Invalid date format' });
+  }
   if (appointmentDate < today) {
     return res.status(400).json({ error: 'Appointment date cannot be in the past' });
   }
 
   try {
-    const [patientRows] = await db.promise().query(
+    // Ensure patient profile exists
+    let [patientRows] = await db.promise().query(
       'SELECT id FROM patients WHERE user_id = ?',
       [user_id]
     );
-
-
-  if (patientRows.length === 0) {
-      return res.status(400).json({
-        error: 'Patient profile not found. Please update your profile first.'
-      });
+    
+    // Create patient profile if not exists
+    if (patientRows.length === 0) {
+      await db.promise().query(
+        'INSERT INTO patients (user_id) VALUES (?)',
+        [user_id]
+      );
+      [patientRows] = await db.promise().query(
+        'SELECT id FROM patients WHERE user_id = ?',
+        [user_id]
+      );
+      console.log('Created new patient profile for user:', user_id);
     }
 
-  const patient_id = patientRows[0].id;
+    const patient_id = patientRows[0].id;
 
+    // Verify doctor exists
     const [doctorRows] = await db.promise().query(
-      'SELECT id FROM doctors WHERE id = ?',
+      'SELECT d.id, u.name FROM doctors d JOIN users u ON u.id = d.user_id WHERE d.id = ?',
       [doctor_id]
     );
 
-   if (doctorRows.length === 0) {
+    if (doctorRows.length === 0) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
     
-    const [duplicate] = await db.promise().query(
-      `SELECT id FROM appointments
-       WHERE doctor_id = ? AND date = ? AND time = ? AND status != 'done'`,
-      [doctor_id, date, time]
-    );
-
-    if (duplicate.length > 0) {
-      return res.status(409).json({
-        error: 'This time slot is already booked. Please choose another time.'
-      });
-    }
-
+    // Insert appointment - time will be NULL if not provided
     const [result] = await db.promise().query(
-      `INSERT INTO appointments (patient_id, doctor_id, date, time, status)
+      `INSERT INTO appointments (patient_id, doctor_id, date, time, status) 
        VALUES (?, ?, ?, ?, 'pending')`,
-      [patient_id, doctor_id, date, time]
+      [patient_id, doctor_id, date, time || null]
     );
     
+    console.log('Appointment booked successfully. ID:', result.insertId);
+    
     res.status(201).json({
-      message: 'Appointment booked successfully',
+      message: 'Appointment request submitted successfully! The doctor will confirm your appointment time.',
       appointment_id: result.insertId
     });
 
-    } catch (err) {
-    res.status(500).json({ error: 'Server error', details: err.message });
+  } catch (err) {
+    console.error('Booking error:', err);
+    res.status(500).json({ 
+      error: 'Failed to book appointment. Please try again.'
+    });
   }
 };
 
@@ -101,7 +108,8 @@ const getMyAppointments = async (req, res) => {
     );
     res.status(200).json({ appointments: rows });
 
-    } catch (err) {
+  } catch (err) {
+    console.error('Error fetching appointments:', err);
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
@@ -142,7 +150,8 @@ const getDoctorAppointments = async (req, res) => {
 
     res.status(200).json({ appointments: rows });
 
-    } catch (err) {
+  } catch (err) {
+    console.error('Error fetching doctor appointments:', err);
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
@@ -152,10 +161,10 @@ const updateStatus = async (req, res) => {
   const { status } = req.body;
   const user_id = req.user.id;
 
-  const allowed = ['confirmed', 'done'];
+  const allowed = ['confirmed', 'done', 'cancelled'];
   if (!allowed.includes(status)) {
     return res.status(400).json({
-      error: "Status must be 'confirmed' or 'done'"
+      error: "Status must be 'confirmed', 'done', or 'cancelled'"
     });
   }
 
@@ -192,6 +201,7 @@ const updateStatus = async (req, res) => {
     });
 
   } catch (err) {
+    console.error('Error updating status:', err);
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };

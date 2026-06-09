@@ -2,7 +2,6 @@ const db = require('../config/db');
 
 const getProfile = async (req, res) => {
   try {
-    
     const [rows] = await db.promise().query(
       `SELECT
          u.id        AS user_id,
@@ -36,14 +35,12 @@ const updateProfile = async (req, res) => {
   const user_id = req.user.id;
 
   try {
-    
     const [existing] = await db.promise().query(
       'SELECT id FROM patients WHERE user_id = ?',
       [user_id]
     );
 
     if (existing.length === 0) {
-    
       await db.promise().query(
         `INSERT INTO patients (user_id, dob, blood_group, phone, address)
          VALUES (?, ?, ?, ?, ?)`,
@@ -60,32 +57,34 @@ const updateProfile = async (req, res) => {
 
     res.status(200).json({ message: 'Profile updated successfully' });
 
-  }catch (err) {
-    res.status(500).json({ error: 'Server error', details: err.message });
-  }
-};
-
-const getDoctors = async (req, res) => {
-  try {
-    
-    const [rows] = await db.promise().query(
-      `SELECT
-         d.id          AS doctor_id,
-         u.name        AS doctor_name,
-         u.email,
-         d.specialty,
-         d.fee,
-         d.available_days
-       FROM doctors d
-       JOIN users u ON u.id = d.user_id
-       ORDER BY u.name ASC`
-    );
-
-    res.status(200).json({ doctors: rows });
-
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
-module.exports = { getProfile, updateProfile, getDoctors };  
+
+const getDoctors = async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT
+         d.id          AS id,           
+         d.id          AS doctor_id,    
+         u.name        AS name,         
+         u.name        AS doctor_name,
+         u.email       AS email,
+         d.specialty   AS specialty,   
+         d.specialty   AS department,   
+         d.fee         AS fee,
+         d.available_days AS available_days
+       FROM doctors d
+       JOIN users u ON u.id = d.user_id
+       ORDER BY u.name ASC`
+    );
+
+    res.status(200).json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+};
+
+module.exports = { getProfile, updateProfile, getDoctors };
