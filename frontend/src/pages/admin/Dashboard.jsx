@@ -1,140 +1,195 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
+import { useAuth } from '../../context/AuthContext';
+import Footer from '../../components/Footer';
 
-const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalDoctors: 0, totalPatients: 0,
-    totalAppointments: 0, pendingAppointments: 0
-  });
+const topbarStyle = { background:'#1a6b3a', color:'#fff', height:52, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 32px', position:'fixed', top:0, left:0, right:0, zIndex:100 };
+const navbarStyle = { background:'#145c30', height:44, display:'flex', alignItems:'center', padding:'0 32px', gap:2, position:'fixed', top:52, left:0, right:0, zIndex:99 };
+const newsbarStyle = { background:'#e8f5ee', borderBottom:'1px solid #b6d9c4', padding:'8px 32px', fontSize:12, color:'#1a6b3a', display:'flex', gap:16, alignItems:'center', position:'fixed', top:96, left:0, right:0, zIndex:98 };
+const mainStyle = { background:'#f0f7f3', flex:1, padding:'24px 32px', marginTop:132 };
+const cardStyle = { background:'#fff', borderRadius:8, border:'0.5px solid #e2e8f0', padding:'20px 24px' };
+
+const StatCard = ({ title, value, icon, color, sub }) => (
+  <div style={{ flex:1, background:'#fff', borderRadius:8, border:'0.5px solid #e2e8f0', borderLeft:`3px solid ${color}`, padding:'16px 20px', display:'flex', alignItems:'center', gap:14 }}>
+    <div style={{ width:44, height:44, borderRadius:8, background:`${color}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+      {icon}
+    </div>
+    <div>
+      <div style={{ fontSize:11, color:'#64748b', marginBottom:2 }}>{title}</div>
+      <div style={{ fontSize:26, fontWeight:700, color }}>{value}</div>
+      <div style={{ fontSize:10, color:'#94a3b8', marginTop:2 }}>{sub}</div>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    confirmed: ['#e8f5ee','#1a6b3a','Confirmed'],
+    pending: ['#fef9e7','#b7770d','Pending'],
+    done: ['#e8f5ee','#1a6b3a','Done'],
+    cancelled: ['#fdecea','#c0392b','Cancelled'],
+  };
+  const [bg, color, label] = map[status] || ['#f1f5f9','#64748b', status||'—'];
+  return <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:600, background:bg, color }}>{label}</span>;
+};
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState({ doctors:0, patients:0, appointments:0, pending:0 });
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem('token');
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) { navigate('/login'); return; }
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
-      const [aptRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/appointments', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+      const [docRes, patRes, aptRes] = await Promise.all([
+        axiosInstance.get('/api/doctors').catch(() => ({ data:[] })),
+        axiosInstance.get('/api/patients').catch(() => ({ data:[] })),
+        axiosInstance.get('/api/appointments').catch(() => ({ data:[] })),
       ]);
-      const apts = aptRes.data;
-      setAppointments(apts.slice(0, 5));
-      setStats({
-        totalAppointments: apts.length,
-        pendingAppointments: apts.filter(a => a.status === 'pending').length,
-        totalDoctors: 0,
-        totalPatients: 0,
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      const apts = Array.isArray(aptRes.data) ? aptRes.data : [];
+      setStats({ doctors: docRes.data.length||0, patients: patRes.data.length||0, appointments: apts.length, pending: apts.filter(a => a.status==='pending').length });
+      setAppointments(apts.slice(0,5));
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  const handleLogout = () => { localStorage.clear(); navigate('/login'); };
+  const navLinks = [
+    { label:'Dashboard', path:'/admin/dashboard' },
+    { label:'Doctors', path:'/admin/doctors' },
+    { label:'Patients', path:'/admin/patients' },
+    { label:'Appointments', path:'/admin/appointments' },
+  ];
+
+  const statCards = [
+    { title:'Total Doctors', value:stats.doctors, icon:'👨‍⚕️', color:'#1a6b3a', sub:'Registered doctors' },
+    { title:'Total Patients', value:stats.patients, icon:'🧑‍🤝‍🧑', color:'#2980b9', sub:'Registered patients' },
+    { title:'Appointments', value:stats.appointments, icon:'📅', color:'#e67e22', sub:'All time' },
+    { title:'Pending', value:stats.pending, icon:'⏳', color:'#e74c3c', sub:'Need attention' },
+  ];
+
+  const quickActions = [
+    { label:'+ Add New Doctor', path:'/register', bg:'#136634' },
+    { label:'📅 View All Appointments', path:'/admin/appointments', bg:'#1172b3' },
+    { label:'🧑‍🤝‍🧑 Manage Patients', path:'/admin/patients', bg:'#601490' },
+    { label:'👨‍⚕️ Manage Doctors', path:'/admin/doctors', bg:'#c7bbb0' },
+  ];
 
   return (
-    <div style={s.page}>
-      {/* SIDEBAR */}
-      <div style={s.sidebar}>
-        <div style={s.brand}>🏥<br /><span style={{fontSize:13}}>HMS Admin</span></div>
-        <nav>
-          {[{icon:'📊',label:'Dashboard'},{icon:'👨‍⚕️',label:'Doctors'},{icon:'🧑‍🤝‍🧑',label:'Patients'},{icon:'📅',label:'Appointments'}].map(i => (
-            <div key={i.label} style={s.navItem}>{i.icon} &nbsp;{i.label}</div>
-          ))}
-        </nav>
-        <button onClick={handleLogout} style={s.logoutBtn}>🚪 Logout</button>
-      </div>
+    <div style={{ fontFamily:'Segoe UI, sans-serif', minHeight:'100vh', display:'flex', flexDirection:'column' }}>
 
-      {/* MAIN */}
-      <div style={s.main}>
-        {/* Header */}
-        <div style={s.header}>
+      <div style={topbarStyle}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:22 }}>🏥</span>
           <div>
-            <h2 style={{margin:0,color:'#1a3c5e'}}>Admin Dashboard</h2>
-            <p style={{margin:0,color:'#888',fontSize:13}}>Hospital Management System</p>
+            <div style={{ fontSize:15, fontWeight:700 }}>HMS — Hospital Management System</div>
+            <div style={{ fontSize:11, opacity:0.7 }}>Providing quality healthcare management</div>
           </div>
-          <div style={s.avatar}>A</div>
         </div>
-
-        {/* Cards */}
-        <div style={s.grid4}>
-          {[
-            {label:'Total Doctors',value:stats.totalDoctors,icon:'👨‍⚕️',color:'#1976d2'},
-            {label:'Total Patients',value:stats.totalPatients,icon:'🧑‍🤝‍🧑',color:'#388e3c'},
-            {label:'Appointments',value:stats.totalAppointments,icon:'📅',color:'#f57c00'},
-            {label:'Pending',value:stats.pendingAppointments,icon:'⏳',color:'#d32f2f'},
-          ].map(c => (
-            <div key={c.label} style={{...s.card, borderTop:`4px solid ${c.color}`}}>
-              <div style={{fontSize:32}}>{c.icon}</div>
-              <div style={{fontSize:28,fontWeight:'bold',color:c.color}}>{c.value}</div>
-              <div style={{color:'#888',fontSize:13}}>{c.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Table */}
-        <div style={s.box}>
-          <h3 style={{color:'#1a3c5e',marginTop:0}}>📋 Recent Appointments</h3>
-          {loading ? <p>Loading...</p> : (
-            <table style={s.table}>
-              <thead>
-                <tr style={{background:'#1a6b3a',color:'white'}}>
-                  {['Patient','Doctor','Date','Status'].map(h=>(
-                    <th key={h} style={s.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.length === 0
-                  ? <tr><td colSpan={4} style={{textAlign:'center',padding:20,color:'#aaa'}}>No appointments found</td></tr>
-                  : appointments.map((a,i) => (
-                    <tr key={i} style={{background:i%2===0?'#f9f9f9':'white'}}>
-                      <td style={s.td}>{a.patient_name||'N/A'}</td>
-                      <td style={s.td}>{a.doctor_name||'N/A'}</td>
-                      <td style={s.td}>{a.appointment_date ? new Date(a.appointment_date).toLocaleDateString() : 'N/A'}</td>
-                      <td style={s.td}><StatusBadge status={a.status}/></td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          )}
+        <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:13 }}>
+          <span>🔔</span>
+          <span style={{ fontWeight:600 }}>{user?.name || 'Admin'}</span>
+          <button onClick={() => { logout(); navigate('/login'); }} style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.4)', color:'#fff', padding:'5px 14px', borderRadius:4, cursor:'pointer', fontSize:12 }}>
+            Logout
+          </button>
         </div>
       </div>
+
+      <div style={navbarStyle}>
+        {navLinks.map(link => (
+          <div key={link.label} onClick={() => navigate(link.path)} style={{ color:'#fff', padding:'8px 16px', fontSize:13, cursor:'pointer', borderRadius:4, fontWeight:link.label==='Dashboard'?600:400, background:link.label==='Dashboard'?'rgba(255,255,255,0.15)':'transparent', opacity:link.label==='Dashboard'?1:0.85 }}>
+            {link.label}
+          </div>
+        ))}
+      </div>
+
+      <div style={newsbarStyle}>
+        <span style={{ background:'#1a6b3a', color:'#fff', padding:'2px 10px', borderRadius:3, fontSize:11, fontWeight:700, flexShrink:0 }}>NEWS</span>
+        <span style={{ fontWeight:500 }}>Welcome to Hospital Management System — Admin Panel</span>
+      </div>
+
+      <div style={mainStyle}>
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:16, fontWeight:700, color:'#1a6b3a' }}>Welcome back, {user?.name || 'Admin'}! 👋</div>
+          <div style={{ fontSize:12, color:'#274d81', marginTop:2 }}>Here's your hospital overview</div>
+        </div>
+
+        <div style={{ display:'flex', gap:14, marginBottom:20 }}>
+          {statCards.map(card => <StatCard key={card.title} {...card} />)}
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:14 }}>
+
+          <div style={cardStyle}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#064e22' }}>Recent Appointments</div>
+              <span onClick={() => navigate('/admin/appointments')} style={{ fontSize:12, color:'#0d5c2d', cursor:'pointer', fontWeight:500 }}>View all →</span>
+            </div>
+            {loading ? <p style={{ color:'#2e72d2', fontSize:13 }}>Loading...</p> : (
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr style={{ background:'#f8fafc' }}>
+                    {['Patient','Doctor','Date','Status'].map(h => (
+                      <th key={h} style={{ textAlign:'left', padding:'10px 12px', color:'#64748b', fontWeight:600, borderBottom:'1px solid #f1f5f9' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.length === 0
+                    ? <tr><td colSpan={4} style={{ textAlign:'center', padding:32, color:'#94a3b8' }}>No appointments found</td></tr>
+                    : appointments.map((a, i) => (
+                      <tr key={i} style={{ borderBottom:'0.5px solid #f1f5f9' }}>
+                        <td style={{ padding:'10px 12px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div style={{ width:28, height:28, borderRadius:'50%', background:'#e8f5ee', color:'#1a6b3a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700 }}>
+                              {(a.patient_name||'P')[0]}
+                            </div>
+                            <span style={{ fontWeight:500 }}>{a.patient_name||'—'}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding:'10px 12px', fontWeight:500 }}>{a.doctor_name||'—'}</td>
+                        <td style={{ padding:'10px 12px', color:'#64748b' }}>
+                          {a.date ? new Date(a.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'}
+                        </td>
+                        <td style={{ padding:'10px 12px' }}><StatusBadge status={a.status} /></td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a6b3a', marginBottom:14 }}>Quick Actions</div>
+              {quickActions.map(btn => (
+                <button key={btn.label} onClick={() => navigate(btn.path)} style={{ width:'100%', padding:'9px 14px', background:btn.bg, color:'white', border:'none', borderRadius:6, fontSize:12, cursor:'pointer', textAlign:'left', fontWeight:600, marginBottom:8 }}>
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#1a6b3a', marginBottom:14 }}>Hospital Summary</div>
+              {[
+                { label:'Active Doctors', value:stats.doctors, color:'#1a6b3a' },
+                { label:'Total Patients', value:stats.patients, color:'#2980b9' },
+                { label:'Confirmed', value:appointments.filter(a=>a.status==='confirmed').length, color:'#1a6b3a' },
+                { label:'Pending Review', value:stats.pending, color:'#e74c3c' },
+              ].map(item => (
+                <div key={item.label} style={{ display:'flex', justifyContent:'space-between', fontSize:13, paddingBottom:8, borderBottom:'0.5px solid #f1f5f9', marginBottom:8 }}>
+                  <span style={{ color:'#64748b', fontWeight:500 }}>{item.label}</span>
+                  <span style={{ fontWeight:700, color:item.color }}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
     </div>
   );
-};
-
-const StatusBadge = ({status}) => {
-  const map = {approved:['#e8f5e9','#2e7d32'],pending:['#fff3e0','#e65100'],cancelled:['#ffebee','#c62828']};
-  const [bg,color] = map[status]||['#f5f5f5','#333'];
-  return <span style={{background:bg,color,padding:'3px 10px',borderRadius:12,fontSize:12}}>{status||'pending'}</span>;
-};
-
-const s = {
-  page:{display:'flex',minHeight:'100vh',fontFamily:'Segoe UI,sans-serif',background:'#f0f4f8'},
-  sidebar:{width:220,background:'#1a6b3a',display:'flex',flexDirection:'column',padding:'0',position:'fixed',height:'100vh'},
-  brand:{textAlign:'center',padding:'24px 0 16px',color:'white',fontSize:22,borderBottom:'1px solid rgba(255,255,255,0.15)',marginBottom:10},
-  navItem:{color:'white',padding:'13px 24px',cursor:'pointer',fontSize:14,transition:'background 0.2s'},
-  logoutBtn:{margin:'auto 16px 24px',background:'#c0392b',border:'none',color:'white',padding:12,borderRadius:8,cursor:'pointer'},
-  main:{marginLeft:220,flex:1,padding:30},
-  header:{display:'flex',justifyContent:'space-between',alignItems:'center',background:'white',padding:'18px 24px',borderRadius:12,marginBottom:24,boxShadow:'0 2px 8px rgba(0,0,0,0.07)'},
-  avatar:{width:42,height:42,borderRadius:'50%',background:'#1a6b3a',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold',fontSize:18},
-  grid4:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:20,marginBottom:24},
-  card:{background:'white',borderRadius:12,padding:20,textAlign:'center',boxShadow:'0 2px 8px rgba(0,0,0,0.07)'},
-  box:{background:'white',borderRadius:12,padding:24,boxShadow:'0 2px 8px rgba(0,0,0,0.07)'},
-  table:{width:'100%',borderCollapse:'collapse'},
-  th:{padding:'11px 14px',textAlign:'left',fontWeight:600},
-  td:{padding:'11px 14px',borderBottom:'1px solid #f0f0f0'},
-};
-
-export default AdminDashboard;
+}

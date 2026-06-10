@@ -6,9 +6,11 @@ import AdminDashboard from './pages/admin/Dashboard';
 import DoctorDashboard from './pages/doctor/Dashboard';
 import PatientDashboard from './pages/patient/Dashboard';
 import Doctors from './pages/admin/Doctors';
+import MyAppointments from './pages/doctor/MyAppointments';
+// CRITICAL NEW IMPORTS: Bringing in your missing patient pages
+import BookAppointment from './pages/patient/BookAppointment';
+import PatientProfile from './pages/patient/Profile';
 
-
-// ✅ Protected Route - login না করলে /login এ পাঠাবে
 const ProtectedRoute = ({ element, allowedRole }) => {
   const { user, token } = useAuth();
   if (!token) return <Navigate to="/login" />;
@@ -24,20 +26,38 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/admin/doctors" element={<Doctors />} />
 
-          {/* Protected Dashboard Routes */}
+         
           <Route path="/admin/dashboard" element={
             <ProtectedRoute element={<AdminDashboard />} allowedRole="admin" />
           } />
+          <Route path="/admin/doctors" element={
+            <ProtectedRoute element={<Doctors />} allowedRole="admin" />
+          } />
+
+          <Route path="/doctor/appointments" element={
+  <ProtectedRoute element={<MyAppointments />} allowedRole="doctor" />
+} />
           <Route path="/doctor/dashboard" element={
             <ProtectedRoute element={<DoctorDashboard />} allowedRole="doctor" />
           } />
+
+          {/* Patient Routes */}
           <Route path="/patient/dashboard" element={
             <ProtectedRoute element={<PatientDashboard />} allowedRole="patient" />
           } />
+          
+          
+          <Route path="/patient/book-appointment" element={
+            <ProtectedRoute element={<BookAppointment />} allowedRole="patient" />
+          } />
 
-          {/* Default */}
+        
+          <Route path="/patient/profile" element={
+            <ProtectedRoute element={<PatientProfile />} allowedRole="patient" />
+          } />
+
+          
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </AuthProvider>
