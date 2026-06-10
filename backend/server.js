@@ -34,7 +34,21 @@ testConnection();
 
 app.use((req, res, next) => { req.db = db; next(); });
 
-
+// ============ ACTIVITY LOGGING HELPER ============
+async function logActivity(userId, userRole, actionType, entityType, entityId = null, description = null) {
+  try {
+    await db.query(
+      `INSERT INTO user_history (user_id, user_role, action_type, entity_type, entity_id, description, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [userId, userRole, actionType, entityType, entityId, description]
+    );
+    console.log(`✅ Logged: ${userRole} - ${actionType}`);
+    return true;
+  } catch (err) {
+    console.error('❌ Error logging activity:', err.message);
+    return false;
+  }
+}
 
 // Routes from files
 const authRoutes = require('./routes/auth');
@@ -47,6 +61,49 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/doctors', doctorRoutes);
 
+// ============ LOGIN ROUTE (with logging) ============
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  console.log('📝 Login attempt:', email);
+  
+  try {
+    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const user = users[0];
+    const validPassword = await bcrypt.compare(password, user.password);
+    
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'secret_key',
+      { expiresIn: '7d' }
+    );
+    
+    // Log the login
+    await logActivity(user.id, user.role, 'login', 'auth', user.id, `${user.role} logged in`);
+    
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ INLINE ROUTES ============
 
 // Patient doctors list
 app.get('/api/patient/doctors', async (req, res) => {

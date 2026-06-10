@@ -17,7 +17,7 @@ import DoctorProfile from './pages/doctor/profile';
 import DoctorMyPatients from './pages/doctor/MyPatients';
 import Departments from './pages/departments';
 import Doctors from './pages/doctors';
-
+import Analytics from './pages/Analytics';
 
 const ProtectedRoute = ({ element, allowedRole }) => {
   const { user, token } = useAuth();
@@ -38,7 +38,7 @@ function App() {
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-     
+          <Route path="/analytics" element={<ProtectedRoute element={<Analytics />} />} />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRole="admin" />} />
