@@ -12,6 +12,7 @@ export default function Navbar({ active }) {
 
   const adminLinks = [
     { label: 'Dashboard', path: '/admin/dashboard' },
+    { label: 'Analytics', path: '/analytics' },
     { label: 'Doctors', path: '/admin/doctors' },
     { label: 'Appointments', path: '/admin/appointments' },
     { label: 'Patients', path: '/admin/patients' },
@@ -19,12 +20,14 @@ export default function Navbar({ active }) {
 
 const doctorLinks = [
   { label: 'Dashboard', path: '/doctor/dashboard' },
+  { label: 'Analytics', path: '/analytics' },
   { label: 'Appointments', path: '/doctor/appointments' },
   { label: 'My Profile', path: '/doctor/profile' },
 ];
 
 const patientLinks = [
   { label: 'Dashboard', path: '/patient/dashboard' },
+  { label: 'Analytics', path: '/analytics' },
   { label: 'Book Appointment', path: '/patient/book-appointment' },
   { label: 'My Profile', path: '/patient/profile' },
 ];

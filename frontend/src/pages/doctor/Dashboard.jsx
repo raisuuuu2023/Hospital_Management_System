@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
+import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
 export default function DoctorDashboard() {
@@ -44,30 +45,10 @@ export default function DoctorDashboard() {
  ];
 
  return (
- <div style={{ fontFamily:'Segoe UI, sans-serif', minHeight:'100vh', display:'flex', flexDirection:'column' }}>
 
- <div style={C.topbar}>
- <div style={{ display:'flex', alignItems:'center', gap:10 }}>
- <span style={{ fontSize:22 }}>🏥</span>
- <div>
- <div style={{ fontSize:15, fontWeight:700 }}>HMS — Hospital Management System</div>
- <div style={{ fontSize:11, opacity:0.7 }}>Providing quality healthcare management</div>
- </div>
- </div>
- <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:13 }}>
- <span>🔔</span>
- <span style={{ fontWeight:600 }}>{user?.name || 'Doctor'}</span>
- <button onClick={() => { logout(); navigate('/login'); }} style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.4)', color:'#fff', padding:'5px 14px', borderRadius:4, cursor:'pointer', fontSize:12 }}>Logout</button>
- </div>
- </div>
-
- <div style={C.navbar}>
- {[{label:'Dashboard',path:'/doctor/dashboard'},{label:'Appointments',path:'/doctor/appointments'},{label:'My Patients',path:'/doctor/patients'},{label:'My Profile',path:'/doctor/profile'}].map(link => (
- <div key={link.label} onClick={() => navigate(link.path)} style={{ color:'#fff', padding:'8px 16px', fontSize:13, cursor:'pointer', borderRadius:4, fontWeight:link.label==='Dashboard'?600:400, background:link.label==='Dashboard'?'rgba(255,255,255,0.15)':'transparent', opacity:link.label==='Dashboard'?1:0.85 }}>
- {link.label}
- </div>
- ))}
- </div>
+  <div style={{ fontFamily: 'Segoe UI, sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
+  <Navbar active="Dashboard" />
 
  <div style={C.newsbar}>
  <span style={{ background:'#1a6b3a', color:'#fff', padding:'2px 10px', borderRadius:3, fontSize:11, fontWeight:700, flexShrink:0 }}>NEWS</span>

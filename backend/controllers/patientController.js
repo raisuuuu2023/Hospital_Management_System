@@ -1,5 +1,6 @@
 const db = require('../config/db');
 
+// 1. GET PATIENT PROFILE
 const getProfile = async (req, res) => {
   try {
     const [rows] = await db.promise().query(
@@ -23,13 +24,13 @@ const getProfile = async (req, res) => {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    res.status(200).json({ profile: rows[0] });
-
+    res.status(200).json({ profile: rows });
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
+// 2. UPDATE PATIENT PROFILE
 const updateProfile = async (req, res) => {
   const { dob, blood_group, phone, address } = req.body;
   const user_id = req.user.id;
@@ -51,18 +52,17 @@ const updateProfile = async (req, res) => {
         `UPDATE patients
          SET dob = ?, blood_group = ?, phone = ?, address = ?
          WHERE user_id = ?`,
-        [dob, blood_group, phone, address, user_id]
+         [dob, blood_group, phone, address, user_id]
       );
     }
 
     res.status(200).json({ message: 'Profile updated successfully' });
-
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
-
+// 3. GET DOCTORS DIRECTORY (FIXED: Pulls blood group safely for matching)
 const getDoctors = async (req, res) => {
   try {
     const [rows] = await db.promise().query(
@@ -76,12 +76,21 @@ const getDoctors = async (req, res) => {
          d.specialty   AS department,   
          d.fee         AS fee,
          d.available_days AS available_days
+         d.id           AS doctor_id,
+         u.name         AS doctor_name,
+         u.email,
+         d.specialty,
+         d.fee,
+         d.available_days,
+         dp.blood_group AS doctor_blood_group
        FROM doctors d
        JOIN users u ON u.id = d.user_id
+       LEFT JOIN patients dp ON dp.user_id = u.id
        ORDER BY u.name ASC`
     );
 
     res.status(200).json(rows);
+    res.status(200).json({ doctors: rows });
   } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }

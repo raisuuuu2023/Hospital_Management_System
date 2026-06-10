@@ -18,6 +18,7 @@ import DoctorMyPatients from './pages/doctor/MyPatients';
 import Departments from './pages/departments';
 import Doctors from './pages/doctors';
 
+
 const ProtectedRoute = ({ element, allowedRole }) => {
   const { user, token } = useAuth();
   if (!token) return <Navigate to="/login" />;
@@ -37,6 +38,7 @@ function App() {
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+     
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRole="admin" />} />

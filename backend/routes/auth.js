@@ -1,12 +1,10 @@
-const express            = require('express');
-const router             = express.Router();
-const { register, login } = require('../controllers/authController');
-const { authMiddleware,
-        roleMiddleware }   = require('../middleware/auth');
+const express = require('express');
+const router = express.Router();
+const { register } = require('../controllers/authController');
+const { authMiddleware, roleMiddleware } = require('../middleware/auth');
 
+// Only keep register here - login is handled in server.js
 router.post('/register', register);
-
-router.post('/login', login);
 
 router.get('/profile', authMiddleware, (req, res) => {
   res.status(200).json({
@@ -15,7 +13,6 @@ router.get('/profile', authMiddleware, (req, res) => {
   });
 });
 
-// This is a test route — you can delete it after Push 4
 router.get('/admin-only', authMiddleware, roleMiddleware('admin'), (req, res) => {
   res.status(200).json({
     message: 'Welcome, admin!',
@@ -23,13 +20,11 @@ router.get('/admin-only', authMiddleware, roleMiddleware('admin'), (req, res) =>
   });
 });
 
-// This is a test route — you can delete it after Push 4
 router.get('/doctor-only', authMiddleware, roleMiddleware('doctor'), (req, res) => {
   res.status(200).json({
     message: 'Welcome, doctor!',
     user: req.user
   });
 });
-
 
 module.exports = router;
